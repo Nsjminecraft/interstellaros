@@ -1,0 +1,16 @@
+# Build output
+out/
+
+# Work directory artifacts
+/tmp/serveros-build-work/
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

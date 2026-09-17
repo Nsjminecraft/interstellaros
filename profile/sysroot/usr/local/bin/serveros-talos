@@ -1,0 +1,61 @@
+#!/bin/bash
+set -e
+
+VERSION="0.1.0"
+INSTALL_DIR="/opt/clai-talos"
+BINARY_URL="https://github.com/VynavinV/Clai_TALOS/releases/download/v${VERSION}/clai-talos-${VERSION}-linux-x64.tar.gz"
+
+case "${1:-install}" in
+    install)
+        echo "Installing Clai TALOS v${VERSION}..."
+        mkdir -p "$INSTALL_DIR"
+        cd /tmp
+        curl -fsSL -o clai-talos.tar.gz "$BINARY_URL"
+        tar -xzf clai-talos.tar.gz -C "$INSTALL_DIR" --strip-components=1
+        rm -f clai-talos.tar.gz
+        chmod +x "$INSTALL_DIR/clai-talos" 2>/dev/null || true
+
+        # Create data directory
+        mkdir -p /var/lib/clai-talos
+
+        # Create systemd service
+        cat > /etc/systemd/system/clai-talos.service << 'EOF'
+[Unit]
+Description=Clai TALOS AI Assistant
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/clai-talos
+ExecStart=/opt/clai-talos/clai-talos --headless
+Restart=on-failure
+RestartSec=5
+Environment=WEB_PORT=8080
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+        systemctl daemon-reload
+        systemctl enable clai-talos
+        echo "Clai TALOS installed. Start with: systemctl start clai-talos"
+        echo "Dashboard: http://<server-ip>:8080"
+        ;;
+    uninstall)
+        echo "Removing Clai TALOS..."
+        systemctl stop clai-talos 2>/dev/null || true
+        systemctl disable clai-talos 2>/dev/null || true
+        rm -f /etc/systemd/system/clai-talos.service
+        systemctl daemon-reload
+        rm -rf "$INSTALL_DIR"
+        echo "Clai TALOS removed."
+        ;;
+    status)
+        systemctl is-active clai-talos 2>/dev/null || echo "inactive"
+        ;;
+    *)
+        echo "Usage: $0 {install|uninstall|status}"
+        exit 1
+        ;;
+esac

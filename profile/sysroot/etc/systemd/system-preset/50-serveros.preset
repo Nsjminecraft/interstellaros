@@ -1,0 +1,6 @@
+# Enable Cockpit web UI
+enable cockpit.socket
+enable cockpit.service
+
+# Enable OTA update timer
+enable serveros-update.timer

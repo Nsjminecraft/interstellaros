@@ -1,0 +1,124 @@
+# ServerOS package list
+# Arch + CachyOS base, headless server, performance-tuned
+
+# === Core system ===
+base
+base-devel
+linux-cachyos
+linux-cachyos-headers
+linux-firmware
+intel-ucode
+amd-ucode
+systemd
+systemd-sysvcompat
+systemd-resolvconf
+mkinitcpio
+mkinitcpio-firmware
+
+# === Bootloader ===
+efibootmgr
+efivar
+syslinux
+
+# === Networking ===
+networkmanager
+dhcpcd
+wpa_supplicant
+iptables
+nftables
+firewalld
+openssh
+wireguard-tools
+openvpn
+dnsmasq
+bind
+curl
+wget
+
+# === Storage / NAS ===
+btrfs-progs
+dosfstools
+e2fsprogs
+xfsprogs
+mdadm
+cryptsetup
+lvm2
+smartmontools
+hdparm
+sdparm
+samba
+nfs-utils
+parted
+gptfdisk
+
+# === Container / Orchestration ===
+docker
+docker-compose
+containerd
+kubectl
+kubeadm
+kubelet
+podman
+buildah
+skopeo
+
+# === Web / proxy ===
+nginx
+caddy
+haproxy
+
+# === Security ===
+fail2ban
+nmap
+openssl
+ca-certificates
+archlinux-keyring
+cachyos-keyring
+
+# === Monitoring ===
+htop
+btop
+iotop
+iftop
+lm_sensors
+prometheus-node-exporter
+
+# === System tools ===
+vim
+nano
+tmux
+screen
+rsync
+tar
+zip
+unzip
+7zip
+git
+sudo
+man-db
+man-pages
+texinfo
+tree
+file
+which
+dialog
+cronie
+logrotate
+bash-completion
+
+# === Hardware ===
+pciutils
+usbutils
+dmidecode
+acpid
+
+# === WebUI & Remote Management ===
+cockpit
+cockpit-machines
+cockpit-podman
+cockpit-packagekit
+cockpit-storaged
+cockpit-files
+
+# === OTA Updates ===
+git

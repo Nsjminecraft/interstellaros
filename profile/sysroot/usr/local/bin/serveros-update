@@ -1,0 +1,96 @@
+#!/bin/bash
+# ServerOS OTA Update Script
+# Checks for and applies system updates
+
+set -e
+
+LOG_FILE="/var/log/serveros-updates.log"
+CONFIG_FILE="/etc/serveros/ota.conf"
+
+# Default configuration
+UPDATE_SOURCE="pacman"  # pacman, git, or http
+AUTO_AP=false
+CHECK_INTERVAL=86400  # 24 hours in seconds
+
+# Load config if exists
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+fi
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+check_updates_pacman() {
+    log "Checking for package updates..."
+    pacman -Syuw --noconfirm 2>&1 | tee -a "$LOG_FILE"
+    UPDATES=$(pacman -Qu 2>/dev/null | wc -l)
+    if [ "$UPDATES" -gt 0 ]; then
+        log "Found $UPDATES updates available"
+        pacman -Qu 2>/dev/null | tee -a "$LOG_FILE"
+        return 0
+    else
+        log "System is up to date"
+        return 1
+    fi
+}
+
+apply_updates_pacman() {
+    log "Applying package updates..."
+    if pacman -Su --noconfirm 2>&1 | tee -a "$LOG_FILE"; then
+        log "Updates applied successfully"
+        return 0
+    else
+        log "ERROR: Update failed"
+        return 1
+    fi
+}
+
+check_updates() {
+    case "$UPDATE_SOURCE" in
+        pacman)
+            check_updates_pacman
+            ;;
+        *)
+            log "Unknown update source: $UPDATE_SOURCE"
+            return 1
+            ;;
+    esac
+}
+
+apply_updates() {
+    case "$UPDATE_SOURCE" in
+        pacman)
+            apply_updates_pacman
+            ;;
+        *)
+            log "Unknown update source: $UPDATE_SOURCE"
+            return 1
+            ;;
+    esac
+}
+
+case "$1" in
+    check)
+        check_updates
+        ;;
+    apply)
+        apply_updates
+        ;;
+    auto)
+        if check_updates; then
+            if [ "$AUTO_AP" = true ]; then
+                apply_updates
+            else
+                log "Updates available. Run 'serveros-update apply' to install."
+            fi
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {check|apply|auto}"
+        echo "  check  - Check for available updates"
+        echo "  apply  - Apply available updates"
+        echo "  auto   - Check and auto-apply if configured"
+        exit 1
+        ;;
+esac

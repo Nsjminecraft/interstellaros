@@ -1,0 +1,14 @@
+
+     ____                      ____  _____
+    / ___|  ___  ___  __ _  __|  _ \| ____|
+    \___ \ / _ \/ _ \/ _` |/ _` | | |  _|
+     ___) |  __/  __/ (_| | (_| |_/ /| |___
+    |____/ \___|\___|\__,_|\__,_|____|_____|
+
+    Welcome to ServerOS — hardened CachyOS server
+    Kernel: linux-cachyos (BORE scheduler, x86-64-v3)
+
+    Default login: root (set a password with 'passwd')
+    Run 'serveros-setup' for guided first-time configuration.
+
+    Report issues: https://github.com/yourname/serveros

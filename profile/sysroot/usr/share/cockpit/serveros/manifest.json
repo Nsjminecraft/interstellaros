@@ -1,0 +1,13 @@
+{
+    "version": 0,
+    "requires": {
+        "cockpit": "137"
+    },
+    "tools": {
+        "serveros": {
+            "label": "ServerOS",
+            "path": "index.html",
+            "order": 100
+        }
+    }
+}

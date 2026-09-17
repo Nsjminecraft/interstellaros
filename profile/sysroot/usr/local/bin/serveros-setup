@@ -1,0 +1,80 @@
+#!/bin/bash
+# ServerOS setup helper — guided configuration
+# Run as root: serveros-setup
+
+set -euo pipefail
+
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root." >&2
+    exit 1
+fi
+
+echo "=== ServerOS Setup ==="
+echo
+echo "1) Run first-boot setup (set root password, create admin, SSH keys)"
+echo "2) Configure firewall (nftables)"
+echo "3) Configure Docker storage"
+echo "4) Configure Samba share"
+echo "5) Regenerate initramfs"
+echo "6) Show system info"
+echo "7) Exit"
+echo
+
+read -rp "Choice [1-7]: " C
+
+case "$C" in
+    1) /root/firstboot.sh ;;
+    2)
+        echo "Reloading nftables..."
+        systemctl enable --now nftables
+        nft flush ruleset
+        nft -f /etc/nftables.conf
+        echo "Firewall reloaded."
+        ;;
+    3)
+        read -rp "Docker data root [/var/lib/docker]: " DROOT
+        DROOT="${DROOT:-/var/lib/docker}"
+        mkdir -p "$DROOT"
+        cat > /etc/docker/daemon.json <<EOF
+{
+  "data-root": "$DROOT",
+  "storage-driver": "overlay2",
+  "log-driver": "journald"
+}
+EOF
+        systemctl enable --now docker
+        echo "Docker configured at $DROOT."
+        ;;
+    4)
+        read -rp "Share name: " SNAME
+        read -rp "Share path [/srv/$SNAME]: " SPATH
+        SPATH="${SPATH:-/srv/$SNAME}"
+        mkdir -p "$SPATH"
+        cat >> /etc/samba/smb.conf <<EOF
+
+[$SNAME]
+   path = $SPATH
+   browseable = yes
+   read only = no
+   guest ok = no
+   create mask = 0664
+   directory mask = 0775
+EOF
+        systemctl enable --now smb nmb
+        echo "Samba share '$SNAME' added at $SPATH. Run 'smbpasswd -a <user>' to add users."
+        ;;
+    5)
+        echo "Regenerating initramfs..."
+        mkinitcpio -P
+        echo "Done."
+        ;;
+    6)
+        echo "Kernel: $(uname -r)"
+        echo "Hostname: $(cat /etc/hostname)"
+        echo "Uptime: $(uptime -p)"
+        echo "Disk: $(df -h / | tail -1)"
+        free -h
+        ;;
+    7) exit 0 ;;
+    *) echo "Invalid choice." ;;
+esac

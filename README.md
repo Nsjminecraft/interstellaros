@@ -60,6 +60,24 @@ To run setup manually at any time:
 interstellaros-setup
 ```
 
+## Installing to Disk
+
+From the live ISO, install InterstellarOS to your hard drive:
+
+```bash
+interstellaros-install
+```
+
+The script will:
+- Partition and format the target disk (btrfs + EFI/boot)
+- Install the base system
+- Configure hostname, timezone, locale
+- Set root and admin user passwords
+- Install bootloader (systemd-boot for UEFI, GRUB for BIOS)
+- Enable core services
+
+After installation, reboot and remove the installation media.
+
 ## Web Management
 
 Access the InterstellarOS dashboard at `http://<server-ip>`.

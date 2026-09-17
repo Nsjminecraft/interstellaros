@@ -1,11 +1,10 @@
-# InterstellarOS package list
+# InterstellarOS package list - trimmed for <2GB ISO
 # Arch + CachyOS base, headless server, performance-tuned
 
 # === Core system ===
 base
 base-devel
 linux-cachyos
-linux-cachyos-headers
 linux-firmware
 intel-ucode
 amd-ucode
@@ -24,18 +23,13 @@ syslinux
 networkmanager
 dhcpcd
 wpa_supplicant
-iptables
 nftables
-firewalld
 openssh
 wireguard-tools
-openvpn
-dnsmasq
-bind
 curl
 wget
 
-# === Storage / NAS ===
+# === Storage ===
 btrfs-progs
 dosfstools
 e2fsprogs
@@ -44,32 +38,21 @@ mdadm
 cryptsetup
 lvm2
 smartmontools
-hdparm
-sdparm
 samba
 nfs-utils
 parted
 gptfdisk
 
-# === Container / Orchestration ===
+# === Containers ===
 docker
 docker-compose
 containerd
-kubectl
-kubeadm
-kubelet
-podman
-buildah
-skopeo
 
-# === Web / proxy ===
+# === Web server ===
 nginx
-caddy
-haproxy
 
 # === Security ===
 fail2ban
-nmap
 openssl
 ca-certificates
 archlinux-keyring
@@ -77,34 +60,19 @@ cachyos-keyring
 
 # === Monitoring ===
 htop
-btop
-iotop
-iftop
 lm_sensors
-prometheus-node-exporter
 
 # === System tools ===
 vim
-nano
-tmux
-screen
 rsync
 tar
 zip
 unzip
-7zip
 git
 sudo
-man-db
-man-pages
-texinfo
-tree
-file
-which
-dialog
+bash-completion
 cronie
 logrotate
-bash-completion
 
 # === Hardware ===
 pciutils
@@ -112,8 +80,5 @@ usbutils
 dmidecode
 acpid
 
-# === WebUI & Remote Management ===
+# === WebUI ===
 ttyd
-
-# === OTA Updates ===
-git

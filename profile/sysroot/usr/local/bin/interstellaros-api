@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""InterstellarOS API Backend"""
+import json
+import subprocess
+import os
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+
+class InterstellarOSAPI(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass  # Suppress logs
+
+    def send_json(self, data, status=200):
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode())
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == '/api/system':
+            self.handle_system_info()
+        elif path == '/api/packages/installed':
+            self.handle_installed_packages()
+        elif path == '/api/packages/search':
+            query = parse_qs(parsed.query).get('q', [''])[0]
+            self.handle_search_packages(query)
+        elif path == '/api/talos/status':
+            self.handle_talos_status()
+        else:
+            self.send_json({'error': 'Not found'}, 404)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length).decode() if content_length > 0 else ''
+
+        if path == '/api/packages/install':
+            self.handle_install_package(body)
+        elif path == '/api/packages/remove':
+            self.handle_remove_package(body)
+        else:
+            self.send_json({'error': 'Not found'}, 404)
+
+    def handle_system_info(self):
+        try:
+            # CPU info
+            cpu_info = subprocess.check_output(['grep', '-c', '^processor', '/proc/cpuinfo']).decode().strip()
+            cpu_model = subprocess.check_output(['grep', 'model name', '/proc/cpuinfo']).decode().split('\n')[0].split(':')[1].strip() if subprocess.check_output(['grep', 'model name', '/proc/cpuinfo']).decode() else 'Unknown'
+            cpu_usage = '0'
+            if os.path.exists('/proc/stat'):
+                with open('/proc/stat') as f:
+                    line = f.readline().split()
+                    idle = int(line[4])
+                    total = sum(int(x) for x in line[1:])
+                    cpu_usage = str(round((1 - idle/total) * 100, 1))
+
+            # Memory info
+            mem_info = subprocess.check_output(['free', '-m']).decode()
+            mem_lines = mem_info.split('\n')[1].split()
+            mem_total = mem_lines[1]
+            mem_used = mem_lines[2]
+            mem_free = mem_lines[3]
+
+            # Disk info
+            disk_info = subprocess.check_output(['df', '-h', '/']).decode().split('\n')[1].split()
+            disk_total = disk_info[1]
+            disk_used = disk_info[2]
+            disk_free = disk_info[3]
+            disk_percent = disk_info[4]
+
+            # Uptime
+            uptime = subprocess.check_output(['uptime', '-p']).decode().strip()
+
+            # Load average
+            load_avg = subprocess.check_output(['cat', '/proc/loadavg']).decode().split()[:3]
+
+            self.send_json({
+                'cpu': {
+                    'cores': cpu_info,
+                    'model': cpu_model,
+                    'usage': cpu_usage
+                },
+                'memory': {
+                    'total': mem_total,
+                    'used': mem_used,
+                    'free': mem_free
+                },
+                'disk': {
+                    'total': disk_total,
+                    'used': disk_used,
+                    'free': disk_free,
+                    'percent': disk_percent
+                },
+                'uptime': uptime,
+                'load_average': load_avg
+            })
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+
+    def handle_installed_packages(self):
+        try:
+            packages = subprocess.check_output(['pacman', '-Q']).decode().split('\n')
+            pkg_list = []
+            for pkg in packages:
+                if pkg.strip():
+                    parts = pkg.split()
+                    if len(parts) >= 2:
+                        pkg_list.append({'name': parts[0], 'version': parts[1]})
+            self.send_json({'packages': pkg_list})
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+
+    def handle_search_packages(self, query):
+        try:
+            if not query:
+                self.send_json({'packages': []})
+                return
+            results = subprocess.check_output(['pacman', '-Ss', query]).decode().split('\n')
+            packages = []
+            for i in range(0, len(results)-1, 2):
+                if results[i].strip():
+                    repo_name = results[i].split()[0]
+                    desc = results[i+1].strip() if i+1 < len(results) else ''
+                    packages.append({'repo_name': repo_name, 'description': desc})
+            self.send_json({'packages': packages[:50]})  # Limit results
+        except subprocess.CalledProcessError:
+            self.send_json({'packages': []})
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+
+    def handle_install_package(self, body):
+        try:
+            data = json.loads(body)
+            package = data.get('package')
+            if not package:
+                self.send_json({'error': 'Package name required'}, 400)
+                return
+            # Run pacman install in background
+            subprocess.Popen(['pacman', '-S', '--noconfirm', package])
+            self.send_json({'status': 'installing', 'package': package})
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+
+    def handle_remove_package(self, body):
+        try:
+            data = json.loads(body)
+            package = data.get('package')
+            if not package:
+                self.send_json({'error': 'Package name required'}, 400)
+                return
+            subprocess.Popen(['pacman', '-R', '--noconfirm', package])
+            self.send_json({'status': 'removing', 'package': package})
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+
+    def handle_talos_status(self):
+        try:
+            # Check if TALOS is running
+            result = subprocess.run(['pgrep', '-f', 'talos'], capture_output=True, text=True)
+            running = result.returncode == 0
+            self.send_json({'running': running, 'port': 8080})
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+
+if __name__ == '__main__':
+    server = HTTPServer(('127.0.0.1', 8081), InterstellarOSAPI)
+    print('InterstellarOS API running on port 8081')
+    server.serve_forever()

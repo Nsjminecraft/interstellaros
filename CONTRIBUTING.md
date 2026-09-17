@@ -65,7 +65,8 @@ See the [README](README.md#project-layout) for the full directory tree. Key area
 | Area | Path | Description |
 |------|------|-------------|
 | Package list | `profile/packages.x86_64` | Add/remove packages included in the ISO |
-| Cockpit plugin | `profile/sysroot/usr/share/cockpit/interstellaros/` | Web dashboard UI (HTML, JS, CSS) |
+| WebUI frontend | `profile/sysroot/srv/www/interstellaros/` | Dashboard UI (HTML, JS, CSS) |
+| WebUI API backend | `profile/sysroot/usr/local/bin/interstellaros-api` | Python API for system info and packages |
 | System scripts | `profile/sysroot/usr/local/bin/` | Setup, update, and TALOS scripts |
 | Boot config | `profile/efiboot/`, `profile/syslinux/` | UEFI and BIOS boot entries |
 | System config | `profile/sysroot/etc/` | SSH, firewall, hostname, services |
@@ -79,12 +80,11 @@ See the [README](README.md#project-layout) for the full directory tree. Key area
 - Use lowercase for local variables, UPPER_CASE for environment/config variables
 - Add comments for non-obvious logic
 
-### JavaScript (Cockpit Plugin)
+### JavaScript (WebUI Frontend)
 
-- Use ES5-compatible syntax (no arrow functions in module scope for max compatibility)
-- Escape all user-supplied content with the `esc()` function before inserting into `innerHTML`
-- Use `cockpit.spawn()` with `{ superuser: 'try', err: 'message' }` for system commands
-- Keep the dark theme consistent (use existing CSS variables)
+- Escape all user-supplied content with the `escapeHtml()` function before inserting into `innerHTML`
+- Use `fetch()` for API calls to the Python backend at `/api/`
+- Keep the dark gradient theme consistent (use existing CSS variables)
 
 ### Configuration Files
 
@@ -107,7 +107,7 @@ Use conventional commit format:
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 Examples:
-- `feat(cockpit): add Clai TALOS dashboard link`
+- `feat(webui): add Clai TALOS dashboard tab`
 - `fix(build): correct squashfs compression flag`
 - `docs(readme): update prerequisites section`
 

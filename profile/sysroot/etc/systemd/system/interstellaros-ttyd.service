@@ -1,0 +1,12 @@
+[Unit]
+Description=InterstellarOS Web Terminal
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ttyd -p 7681 -W bash
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

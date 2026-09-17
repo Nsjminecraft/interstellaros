@@ -1,6 +1,7 @@
-# Enable Cockpit web UI
-enable cockpit.socket
-enable cockpit.service
+# Enable InterstellarOS WebUI
+enable nginx.service
+enable interstellaros-api.service
+enable interstellaros-ttyd.service
 
 # Enable OTA update timer
 enable interstellaros-update.timer

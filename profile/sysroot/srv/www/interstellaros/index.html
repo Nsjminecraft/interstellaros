@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InterstellarOS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>InterstellarOS</h1>
+            <nav>
+                <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+                <button class="tab-btn" data-tab="apps">App Store</button>
+                <button class="tab-btn" data-tab="installed">Installed</button>
+                <button class="tab-btn" data-tab="terminal">Terminal</button>
+                <button class="tab-btn" data-tab="talos">Clai TALOS</button>
+            </nav>
+        </header>
+
+        <main>
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>CPU</h3>
+                        <div class="stat-value" id="cpu-usage">--</div>
+                        <div class="stat-detail" id="cpu-info">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Memory</h3>
+                        <div class="stat-value" id="mem-usage">--</div>
+                        <div class="stat-detail" id="mem-info">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Disk</h3>
+                        <div class="stat-value" id="disk-usage">--</div>
+                        <div class="stat-detail" id="disk-info">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Uptime</h3>
+                        <div class="stat-value" id="uptime">--</div>
+                        <div class="stat-detail" id="load-avg">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="apps" class="tab-content">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search packages...">
+                    <button id="search-btn">Search</button>
+                </div>
+                <div id="search-results" class="package-list"></div>
+            </div>
+
+            <div id="installed" class="tab-content">
+                <div id="installed-list" class="package-list"></div>
+            </div>
+
+            <div id="terminal" class="tab-content">
+                <div class="terminal-notice">
+                    <p>Web terminal available at: <a href="/terminal/" target="_blank">/terminal/</a></p>
+                    <p>Or connect via SSH: <code>ssh root@&lt;your-server-ip&gt;</code></p>
+                </div>
+            </div>
+
+            <div id="talos" class="tab-content">
+                <div class="terminal-notice">
+                    <p>Clai TALOS AI Assistant</p>
+                    <p>Status: <span id="talos-status">Checking...</span></p>
+                    <p>Access at: <a href="http://localhost:8080" target="_blank">http://localhost:8080</a></p>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

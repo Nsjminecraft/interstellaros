@@ -7,7 +7,7 @@ Designed for production workloads: NAS, Docker, Kubernetes, web hosting, file/st
 ## Features
 
 - **Performance Kernel** — linux-cachyos with BORE scheduler and x86-64-v3 microarchitectural optimizations
-- **Web Management** — Cockpit-based dashboard with system monitoring, terminal, storage, containers, and VM management
+- **Web Management** — Custom dashboard with system monitoring, app store, web terminal, and TALOS integration
 - **App Store** — Curated package catalog with one-click install for common server applications
 - **Clai TALOS** — Integrated self-hosted AI assistant with web dashboard and Telegram support
 - **OTA Updates** — Automated update checking with configurable policies and systemd timer
@@ -52,7 +52,7 @@ Login as `root` (no password) on the live ISO. The first-boot script (`interstel
 2. Creating an admin user with SSH key
 3. Regenerating SSH host keys
 4. Setting the timezone
-5. Enabling core services (sshd, docker, nftables, fail2ban, NetworkManager, cockpit)
+5. Enabling core services (sshd, docker, nftables, fail2ban, NetworkManager)
 
 To run setup manually at any time:
 
@@ -62,30 +62,23 @@ interstellaros-setup
 
 ## Web Management
 
-Access the Cockpit web UI at `https://<server-ip>:9090` and login with system credentials.
+Access the InterstellarOS dashboard at `http://<server-ip>`.
 
-### InterstellarOS Dashboard
-
-The **InterstellarOS** sidebar page provides:
+### Dashboard Tabs
 
 | Tab | Description |
 |-----|-------------|
-| **App Store** | Curated server apps (Nextcloud, Gitea, Vaultwarden, Jellyfin, databases, dev tools) with one-click install |
-| **Installed Apps** | View installed packages and remove them |
-| **System Resources** | Live CPU, memory, disk, uptime, and top processes |
-| **Clai TALOS** | Install, start, stop the AI assistant; view logs; open dashboard on port 8080 |
+| **Dashboard** | Live CPU, memory, disk usage, uptime, and load average |
+| **App Store** | Search and install packages from Arch/CachyOS repos |
+| **Installed** | View and remove installed packages |
+| **Terminal** | Full web-based terminal (powered by ttyd) |
+| **Clai TALOS** | AI assistant status and access |
 
-### Built-in Cockpit Modules
+### Architecture
 
-- System monitoring (CPU, memory, disk, network)
-- Web terminal (System > Terminal)
-- Package updates with visual management
-- Storage management (disks, RAID, LVM)
-- Container management (Podman/Docker)
-- Virtual machine management
-- Systemd service management
-- System and service logs
-- Network configuration and monitoring
+- **nginx** reverse proxy (port 80) serving static frontend and proxying API/terminal
+- **Python API backend** (port 8081, localhost only) for system info and package management
+- **ttyd** web terminal (port 7681, localhost only) for browser-based shell access
 
 ## Clai TALOS
 
@@ -152,20 +145,22 @@ interstellaros/
 │       │   ├── nftables.conf       # Default-deny firewall
 │       │   ├── hostname
 │       │   ├── locale.conf
+│       ├── nginx/nginx.conf      # Reverse proxy config
 │       │   ├── interstellaros/ota.conf   # OTA update config
 │       │   └── systemd/
 │       │       ├── system/         # Custom services and timers
 │       │       └── system-preset/  # Service enable/disable presets
 │       └── usr/
-│           ├── local/bin/
-│           │   ├── interstellaros-setup  # First-boot guided setup
-│           │   ├── interstellaros-update # OTA update script
-│           │   └── interstellaros-talos  # Clai TALOS installer
-│           └── share/cockpit/interstellaros/
-│               ├── manifest.json   # Cockpit plugin registration
-│               ├── index.html      # Dashboard UI
-│               ├── interstellaros.js     # Dashboard logic
-│               └── interstellaros.css    # Dashboard styles
+│           └── local/bin/
+│               ├── interstellaros-setup  # First-boot guided setup
+│               ├── interstellaros-update # OTA update script
+│               ├── interstellaros-talos  # Clai TALOS installer
+│               └── interstellaros-api    # WebUI API backend
+│       └── srv/
+│           └── www/interstellaros/       # WebUI frontend
+│               ├── index.html
+│               ├── app.js
+│               └── style.css
 └── out/                            # Built ISOs (gitignored)
 ```
 
@@ -181,5 +176,5 @@ This project is licensed under the MIT License — see [LICENSE](LICENSE) for de
 
 - [CachyOS](https://cachyos.org/) — Base distribution and performance-tuned kernel
 - [Arch Linux](https://archlinux.org/) — Upstream package ecosystem
-- [Cockpit Project](https://cockpit-project.org/) — Web-based server management
+- [ttyd](https://github.com/tsl0922/ttyd) — Web-based terminal
 - [Clai TALOS](https://github.com/VynavinV/Clai_TALOS) — Self-hosted AI assistant

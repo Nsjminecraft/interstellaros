@@ -113,12 +113,7 @@ dmidecode
 acpid
 
 # === WebUI & Remote Management ===
-cockpit
-cockpit-machines
-cockpit-podman
-cockpit-packagekit
-cockpit-storaged
-cockpit-files
+ttyd
 
 # === OTA Updates ===
 git

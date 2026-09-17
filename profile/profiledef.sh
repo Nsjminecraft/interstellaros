@@ -1,11 +1,11 @@
-# ServerOS archiso profile definition
+# InterstellarOS archiso profile definition
 # Required by mkarchiso
 
 # ISO name pattern (date appended automatically by mkarchiso)
-export iso_name="serveros"
-export iso_label="SERVEROS_$(date +%Y%m)"
-export iso_publisher="ServerOS <https://github.com/yourname/serveros>"
-export iso_application="ServerOS Live CD"
+export iso_name="interstellaros"
+export iso_label="INTERSTELLAROS_$(date +%Y%m)"
+export iso_publisher="InterstellarOS <https://github.com/yourname/interstellaros>"
+export iso_application="InterstellarOS Live CD"
 export iso_version="$(date +%Y.%m.%d)"
 
 # Build directories

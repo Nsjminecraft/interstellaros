@@ -2,7 +2,7 @@
 out/
 
 # Work directory artifacts
-/tmp/serveros-build-work/
+/tmp/interstellaros-build-work/
 
 # Editor files
 *.swp

@@ -1,0 +1,11 @@
+[Unit]
+Description=InterstellarOS OTA Update Timer
+Requires=interstellaros-update.service
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=24h
+Unit=interstellaros-update.service
+
+[Install]
+WantedBy=timers.target

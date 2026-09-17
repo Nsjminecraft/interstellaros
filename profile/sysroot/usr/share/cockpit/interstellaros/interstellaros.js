@@ -241,7 +241,7 @@
         const btn = $('#talos-install');
         btn.disabled = true;
         btn.textContent = 'Installing...';
-        run("serveros-talos install").then(out => {
+        run("interstellaros-talos install").then(out => {
             toast('Clai TALOS installed');
             $('#talos-logs-output').textContent = out;
             btn.textContent = 'Install Clai TALOS';

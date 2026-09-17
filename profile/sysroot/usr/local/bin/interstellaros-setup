@@ -1,6 +1,6 @@
 #!/bin/bash
-# ServerOS setup helper — guided configuration
-# Run as root: serveros-setup
+# InterstellarOS setup helper — guided configuration
+# Run as root: interstellaros-setup
 
 set -euo pipefail
 
@@ -9,7 +9,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "=== ServerOS Setup ==="
+echo "=== InterstellarOS Setup ==="
 echo
 echo "1) Run first-boot setup (set root password, create admin, SSH keys)"
 echo "2) Configure firewall (nftables)"

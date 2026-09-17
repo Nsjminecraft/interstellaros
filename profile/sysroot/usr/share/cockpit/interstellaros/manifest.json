@@ -4,8 +4,8 @@
         "cockpit": "137"
     },
     "tools": {
-        "serveros": {
-            "label": "ServerOS",
+        "interstellaros": {
+            "label": "InterstellarOS",
             "path": "index.html",
             "order": 100
         }

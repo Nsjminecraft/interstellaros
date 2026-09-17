@@ -1,4 +1,4 @@
-# ServerOS hardened SSH config
+# InterstellarOS hardened SSH config
 # Drops into /etc/ssh/sshd_config on the ISO
 
 Port 22

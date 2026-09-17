@@ -1,6 +1,6 @@
-# Contributing to ServerOS
+# Contributing to InterstellarOS
 
-Thank you for your interest in contributing to ServerOS. This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to InterstellarOS. This document provides guidelines and information for contributors.
 
 ## Code of Conduct
 
@@ -45,17 +45,17 @@ Enhancement suggestions are welcome. Please provide:
 ### Building Locally
 
 ```bash
-git clone https://github.com/<your-username>/serveros.git
-cd serveros
+git clone https://github.com/<your-username>/interstellaros.git
+cd interstellaros
 sudo ./build.sh
 ```
 
-The ISO is output to `./out/serveros-*.iso`.
+The ISO is output to `./out/interstellaros-*.iso`.
 
 ### Testing with QEMU
 
 ```bash
-qemu-system-x86_64 -cdrom out/serveros-*.iso -m 2048 -enable-kvm
+qemu-system-x86_64 -cdrom out/interstellaros-*.iso -m 2048 -enable-kvm
 ```
 
 ## Project Structure
@@ -65,7 +65,7 @@ See the [README](README.md#project-layout) for the full directory tree. Key area
 | Area | Path | Description |
 |------|------|-------------|
 | Package list | `profile/packages.x86_64` | Add/remove packages included in the ISO |
-| Cockpit plugin | `profile/sysroot/usr/share/cockpit/serveros/` | Web dashboard UI (HTML, JS, CSS) |
+| Cockpit plugin | `profile/sysroot/usr/share/cockpit/interstellaros/` | Web dashboard UI (HTML, JS, CSS) |
 | System scripts | `profile/sysroot/usr/local/bin/` | Setup, update, and TALOS scripts |
 | Boot config | `profile/efiboot/`, `profile/syslinux/` | UEFI and BIOS boot entries |
 | System config | `profile/sysroot/etc/` | SSH, firewall, hostname, services |

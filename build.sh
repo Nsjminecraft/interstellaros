@@ -1,5 +1,5 @@
 #!/bin/bash
-# ServerOS ISO build script
+# InterstellarOS ISO build script
 # Runs mkarchiso with isolated work dir — does NOT modify the host system.
 # Usage: sudo ./build.sh
 
@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROFILE_DIR="$SCRIPT_DIR/profile"
-WORK_DIR="/tmp/serveros-build-work"
+WORK_DIR="/tmp/interstellaros-build-work"
 OUT_DIR="$SCRIPT_DIR/out"
 
 # Colors
@@ -16,9 +16,9 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-info()  { echo -e "${GREEN}[ServerOS]${NC} $*"; }
-warn()  { echo -e "${YELLOW}[ServerOS]${NC} $*"; }
-error() { echo -e "${RED}[ServerOS]${NC} $*" >&2; }
+info()  { echo -e "${GREEN}[InterstellarOS]${NC} $*"; }
+warn()  { echo -e "${YELLOW}[InterstellarOS]${NC} $*"; }
+error() { echo -e "${RED}[InterstellarOS]${NC} $*" >&2; }
 
 # Must run as root (mkarchiso needs it for chroot/pacman)
 if [[ $EUID -ne 0 ]]; then
@@ -34,7 +34,7 @@ for cmd in mkarchiso; do
     fi
 done
 
-info "Starting ServerOS ISO build..."
+info "Starting InterstellarOS ISO build..."
 info "Profile:  $PROFILE_DIR"
 info "Work dir: $WORK_DIR"
 info "Output:   $OUT_DIR"
@@ -52,7 +52,7 @@ mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" -m iso "$PROFILE_DIR"
 # Cleanup work dir
 rm -rf "$WORK_DIR"
 
-ISO_FILE=$(ls -t "$OUT_DIR"/serveros-*.iso 2>/dev/null | head -1)
+ISO_FILE=$(ls -t "$OUT_DIR"/interstellaros-*.iso 2>/dev/null | head -1)
 if [[ -n "$ISO_FILE" ]]; then
     ISO_SIZE=$(du -h "$ISO_FILE" | cut -f1)
     info "Build complete!"

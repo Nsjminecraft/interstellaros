@@ -1,7 +1,7 @@
-# ServerOS root shell config
+# InterstellarOS root shell config
 
 # Prompt
-PS1='[\u@serveros \W]# '
+PS1='[\u@interstellaros \W]# '
 
 # History
 HISTSIZE=10000
@@ -20,7 +20,7 @@ alias df='df -h'
 alias du='du -h'
 alias free='free -h'
 
-# ServerOS helpers
+# InterstellarOS helpers
 alias setup='/root/firstboot.sh'
 alias sstatus='systemctl --failed'
 alias jf='journalctl -p err -b'

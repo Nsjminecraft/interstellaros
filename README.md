@@ -1,4 +1,4 @@
-# ServerOS
+# InterstellarOS
 
 A hardened, headless server operating system built on [CachyOS](https://cachyos.org/) with the performance-tuned `linux-cachyos` kernel featuring the BORE scheduler and x86-64-v3 optimizations.
 
@@ -30,23 +30,23 @@ sudo pacman -S archiso
 
 ```bash
 git clone <repository-url>
-cd serveros
+cd interstellaros
 sudo ./build.sh
 ```
 
-The ISO is output to `./out/serveros-YYYY.MM.DD-x86_64.iso` (target size: < 2.5 GB).
+The ISO is output to `./out/interstellaros-YYYY.MM.DD-x86_64.iso` (target size: < 2.5 GB).
 
-The build runs in an isolated work directory (`/tmp/serveros-build-work`) and does **not** modify your host system.
+The build runs in an isolated work directory (`/tmp/interstellaros-build-work`) and does **not** modify your host system.
 
 ## Testing with QEMU
 
 ```bash
-qemu-system-x86_64 -cdrom out/serveros-*.iso -m 2048 -enable-kvm
+qemu-system-x86_64 -cdrom out/interstellaros-*.iso -m 2048 -enable-kvm
 ```
 
 ## First Boot
 
-Login as `root` (no password) on the live ISO. The first-boot script (`serveros-setup`) runs automatically and guides you through:
+Login as `root` (no password) on the live ISO. The first-boot script (`interstellaros-setup`) runs automatically and guides you through:
 
 1. Setting the root password
 2. Creating an admin user with SSH key
@@ -57,16 +57,16 @@ Login as `root` (no password) on the live ISO. The first-boot script (`serveros-
 To run setup manually at any time:
 
 ```bash
-serveros-setup
+interstellaros-setup
 ```
 
 ## Web Management
 
 Access the Cockpit web UI at `https://<server-ip>:9090` and login with system credentials.
 
-### ServerOS Dashboard
+### InterstellarOS Dashboard
 
-The **ServerOS** sidebar page provides:
+The **InterstellarOS** sidebar page provides:
 
 | Tab | Description |
 |-----|-------------|
@@ -89,14 +89,14 @@ The **ServerOS** sidebar page provides:
 
 ## Clai TALOS
 
-ServerOS includes integrated support for [Clai TALOS](https://github.com/VynavinV/Clai_TALOS), a self-hosted AI assistant.
+InterstellarOS includes integrated support for [Clai TALOS](https://github.com/VynavinV/Clai_TALOS), a self-hosted AI assistant.
 
-Install it from the ServerOS dashboard or via CLI:
+Install it from the InterstellarOS dashboard or via CLI:
 
 ```bash
-serveros-talos install   # Download and configure
-serveros-talos status    # Check service status
-serveros-talos uninstall # Remove
+interstellaros-talos install   # Download and configure
+interstellaros-talos status    # Check service status
+interstellaros-talos uninstall # Remove
 ```
 
 Once running, access the TALOS dashboard at `http://<server-ip>:8080`.
@@ -106,14 +106,14 @@ Once running, access the TALOS dashboard at `http://<server-ip>:8080`.
 ### Commands
 
 ```bash
-serveros-update check    # Check for available updates
-serveros-update apply    # Apply all updates
-serveros-update auto     # Run auto-check and apply (per config)
+interstellaros-update check    # Check for available updates
+interstellaros-update apply    # Apply all updates
+interstellaros-update auto     # Run auto-check and apply (per config)
 ```
 
 ### Configuration
 
-Edit `/etc/serveros/ota.conf`:
+Edit `/etc/interstellaros/ota.conf`:
 
 ```ini
 UPDATE_SOURCE="pacman"     # Update source
@@ -121,18 +121,18 @@ AUTO_AP=false              # Auto-apply updates
 CHECK_INTERVAL=86400       # Check interval in seconds (24 hours)
 ```
 
-The `serveros-update.timer` systemd unit checks automatically every 24 hours.
+The `interstellaros-update.timer` systemd unit checks automatically every 24 hours.
 
 View update logs:
 
 ```bash
-journalctl -u serveros-update.service
+journalctl -u interstellaros-update.service
 ```
 
 ## Project Layout
 
 ```
-serveros/
+interstellaros/
 ├── build.sh                        # Build script (run as root)
 ├── LICENSE                         # MIT License
 ├── CODE_OF_CONDUCT.md              # Contributor Covenant
@@ -144,7 +144,7 @@ serveros/
 │   ├── packages.x86_64             # Package list
 │   ├── efiboot/                    # UEFI boot (systemd-boot)
 │   │   ├── loader/loader.conf
-│   │   └── entries/01-serveros-linux.conf
+│   │   └── entries/01-interstellaros-linux.conf
 │   ├── syslinux/                   # BIOS boot (syslinux)
 │   └── sysroot/                    # Overlay files copied to ISO root
 │       ├── etc/
@@ -152,20 +152,20 @@ serveros/
 │       │   ├── nftables.conf       # Default-deny firewall
 │       │   ├── hostname
 │       │   ├── locale.conf
-│       │   ├── serveros/ota.conf   # OTA update config
+│       │   ├── interstellaros/ota.conf   # OTA update config
 │       │   └── systemd/
 │       │       ├── system/         # Custom services and timers
 │       │       └── system-preset/  # Service enable/disable presets
 │       └── usr/
 │           ├── local/bin/
-│           │   ├── serveros-setup  # First-boot guided setup
-│           │   ├── serveros-update # OTA update script
-│           │   └── serveros-talos  # Clai TALOS installer
-│           └── share/cockpit/serveros/
+│           │   ├── interstellaros-setup  # First-boot guided setup
+│           │   ├── interstellaros-update # OTA update script
+│           │   └── interstellaros-talos  # Clai TALOS installer
+│           └── share/cockpit/interstellaros/
 │               ├── manifest.json   # Cockpit plugin registration
 │               ├── index.html      # Dashboard UI
-│               ├── serveros.js     # Dashboard logic
-│               └── serveros.css    # Dashboard styles
+│               ├── interstellaros.js     # Dashboard logic
+│               └── interstellaros.css    # Dashboard styles
 └── out/                            # Built ISOs (gitignored)
 ```
 

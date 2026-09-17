@@ -1,11 +1,11 @@
 #!/bin/bash
-# ServerOS OTA Update Script
+# InterstellarOS OTA Update Script
 # Checks for and applies system updates
 
 set -e
 
-LOG_FILE="/var/log/serveros-updates.log"
-CONFIG_FILE="/etc/serveros/ota.conf"
+LOG_FILE="/var/log/interstellaros-updates.log"
+CONFIG_FILE="/etc/interstellaros/ota.conf"
 
 # Default configuration
 UPDATE_SOURCE="pacman"  # pacman, git, or http
@@ -82,7 +82,7 @@ case "$1" in
             if [ "$AUTO_AP" = true ]; then
                 apply_updates
             else
-                log "Updates available. Run 'serveros-update apply' to install."
+                log "Updates available. Run 'interstellaros-update apply' to install."
             fi
         fi
         ;;

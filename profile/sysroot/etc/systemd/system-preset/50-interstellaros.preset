@@ -3,4 +3,4 @@ enable cockpit.socket
 enable cockpit.service
 
 # Enable OTA update timer
-enable serveros-update.timer
+enable interstellaros-update.timer

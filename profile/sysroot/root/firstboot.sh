@@ -1,5 +1,5 @@
 #!/bin/bash
-# ServerOS first-boot setup script
+# InterstellarOS first-boot setup script
 # Run once as root after install: /root/firstboot.sh
 
 set -euo pipefail

@@ -1,124 +1,298 @@
 #!/bin/bash
-# InterstellarOS install script - run from live ISO to install to disk
+# InterstellarOS Custom TUI Installer
 set -e
 
+# === Colors & Helpers ===
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
-log() { echo -e "${GREEN}[INFO]${NC} $1"; }
-warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
-
 if [[ $EUID -ne 0 ]]; then
-    error "This script must be run as root"
+    echo -e "${RED}[ERROR]${NC} This script must be run as root"
+    exit 1
 fi
 
-echo "=========================================="
-echo "  InterstellarOS Installation"
-echo "=========================================="
-echo
-
-# List available disks
-log "Available disks:"
-lsblk -d -o NAME,SIZE,MODEL,TYPE | grep disk
-echo
-
-read -p "Enter target disk (e.g., sda, nvme0n1): " DISK
-if [[ ! -b /dev/$DISK ]]; then
-    error "Disk /dev/$DISK does not exist"
+# Check for dialog
+if ! command -v dialog &>/dev/null; then
+    echo -e "${YELLOW}[WARN]${NC} dialog not found, falling back to basic installer"
+    exec /usr/local/bin/interstellaros-install-basic "$@"
 fi
 
-echo
-warn "This will erase all data on /dev/$DISK"
-read -p "Are you sure? (yes/no): " CONFIRM
-if [[ "$CONFIRM" != "yes" ]]; then
-    error "Installation cancelled"
+DIALOG="dialog --colors --backtitle '\Zb\Z4InterstellarOS Installer\Zn' --cancel-label 'Exit'"
+
+# === Dialog helpers ===
+msgbox() { $DIALOG --title "$1" --msgbox "\n$2" 12 60; }
+yesno()  { $DIALOG --title "$1" --yesno "\n$2" 10 60; }
+inputbox() { $DIALOG --title "$1" --inputbox "\n$2" 10 60 "$3" 2>&1; }
+menu()   { $DIALOG --title "$1" --menu "\n$2" 18 65 10 "$@" 2>&1; }
+checklist() { $DIALOG --title "$1" --checklist "\n$2" 18 65 10 "$@" 2>&1; }
+passwordbox() { $DIALOG --title "$1" --passwordbox "\n$2" 10 60 2>&1; }
+gauge()  { $DIALOG --title "$1" --gauge "\n$2" 10 60 0; }
+infobox() { $DIALOG --title "$1" --infobox "\n$2" 8 60; }
+
+# === Welcome ===
+$DIALOG --title "Welcome" --msgbox "\n\n\
+\Zb\Z4  _\Zn\Zb_  _\Zn\Zb_\Zn                              \Zb\Z4_____\Zn\n\
+\Zb\Z4 (_)\Zn\Zb| |\Zn\Zb_|\Zn\Zb_ |\Zn                             \Zb\Z4/ ____|\Zn\n\
+\Zb\Z4 _|\Zn\Zb | |\Zn\Zb_ |\Zn\Zb_\Zn  \Zb\Z4_ _\Zn  \Zb\Z4_ _ _\Zn  \Zb\Z4| |\Zn\Zb_  ___\Zn\n\
+\Zb\Z4| |\Zn\Zb | |\Zn  _ |\Zn \Zb\Z4| | |\Zn\Zb_ _  |\Zn  \Zb\Z4|_  |\Zn/ _ \\\n\
+\Zb\Z4| |\Zn\Zb | |\Zn | |\Zn \Zb\Z4|_|\Zn \Zb\Z4| |\Zn  \Zb\Z4| |\Zn   \Zb\Z4__|\Zn |  __/\n\
+\Zb\Z4|_|\Zn \Zb\Z4|_|\Zn |_|\Zn\Zb_ _ _ _\Zn|  \Zb\Z4______|\Zn\\___|\n\n\
+\Zb  CachyOS-based Headless Server OS\Zn\n\
+\Zb  linux-cachyos | BORE | x86-64-v3\Zn\n" 22 65
+
+if [ $? -ne 0 ]; then exit 0; fi
+
+# === Installation type ===
+INST_TYPE=$(menu "Installation Type" "Choose installation mode" \
+    "install" "Install InterstellarOS to disk" \
+    "rescue" "Drop to rescue shell")
+[ -z "$INST_TYPE" ] && exit 0
+
+if [[ "$INST_TYPE" == "rescue" ]]; then
+    clear
+    echo -e "${CYAN}Rescue shell. Type 'exit' to return to installer.${NC}"
+    exec bash
 fi
 
-# Detect UEFI or BIOS
+# === Disk selection ===
+declare -a DISK_ITEMS=()
+while IFS= read -r line; do
+    name=$(echo "$line" | awk '{print $1}')
+    size=$(echo "$line" | awk '{print $2}')
+    model=$(echo "$line" | awk '{for(i=3;i<=NF;i++) printf "%s ", $i; print ""}' | sed 's/ *$//')
+    DISK_ITEMS+=("$name" "${size} ${model}")
+done < <(lsblk -d -o NAME,SIZE,MODEL -n -p | grep -E '(sd|nvme|vd|mmcblk)')
+
+if [ ${#DISK_ITEMS[@]} -eq 0 ]; then
+    msgbox "Error" "No disks detected. Check BIOS/storage configuration."
+    exit 1
+fi
+
+DISK=$(menu "Select Target Disk" "Choose the disk to install InterstellarOS on" "${DISK_ITEMS[@]}")
+[ -z "$DISK" ] && exit 0
+
+DISK_BASE=$(basename "$DISK")
+
+yesno "Confirm" "\Zr\Z1WARNING: All data on $DISK will be erased!\Zn\n\nContinue?" || exit 0
+
+# === Boot mode detection ===
 if [[ -d /sys/firmware/efi ]]; then
     BOOT_MODE="uefi"
-    log "Detected UEFI boot mode"
 else
     BOOT_MODE="bios"
-    log "Detected BIOS boot mode"
 fi
+infobox "Detected" "Boot mode: \Zb\Z2${BOOT_MODE^^}\Zn"
+sleep 1.5
+
+# === Filesystem selection ===
+FS_CHOICE=$(menu "Filesystem" "Select root filesystem type" \
+    "btrfs" "Btrfs - modern, snapshots, compression (recommended)" \
+    "ext4"  "ext4 - stable, widely compatible" \
+    "xfs"   "XFS - high performance for large files")
+[ -z "$FS_CHOICE" ] && exit 0
+
+# === Encryption ===
+ENCRYPT="no"
+yesno "Encryption" "Enable LUKS full disk encryption?" && ENCRYPT="yes"
+
+LUKS_PASS=""
+if [[ "$ENCRYPT" == "yes" ]]; then
+    LUKS_PASS=$(passwordbox "LUKS Password" "Enter encryption passphrase (min 8 chars)")
+    [ -z "$LUKS_PASS" ] && { msgbox "Error" "Password cannot be empty"; exit 1; }
+    LUKS_PASS2=$(passwordbox "LUKS Password" "Confirm encryption passphrase")
+    [[ "$LUKS_PASS" != "$LUKS_PASS2" ]] && { msgbox "Error" "Passwords do not match"; exit 1; }
+    [[ ${#LUKS_PASS} -lt 8 ]] && { msgbox "Error" "Password must be at least 8 characters"; exit 1; }
+fi
+
+# === Hostname ===
+HOSTNAME_VAL=$(inputbox "Hostname" "Enter system hostname" "interstellaros")
+[ -z "$HOSTNAME_VAL" ] && exit 0
+HOSTNAME_VAL=$(echo "$HOSTNAME_VAL" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')
+
+# === Timezone ===
+TZ_LIST=$(find /usr/share/zoneinfo -type f ! -path '*/right/*' ! -path '*/posix/*' | sed 's|/usr/share/zoneinfo/||' | sort | head -200)
+declare -a TZ_ITEMS=()
+while IFS= read -r tz; do
+    TZ_ITEMS+=("$tz" "")
+done <<< "$TZ_LIST"
+
+TIMEZONE=$(menu "Timezone" "Select your timezone" "${TZ_ITEMS[@]}")
+[ -z "$TIMEZONE" ] && exit 0
+
+# === Locale ===
+LOCALE_VAL=$(menu "Locale" "Select system locale" \
+    "en_US.UTF-8" "English (US) - UTF-8" \
+    "en_GB.UTF-8" "English (UK) - UTF-8" \
+    "de_DE.UTF-8" "German - UTF-8" \
+    "fr_FR.UTF-8" "French - UTF-8" \
+    "es_ES.UTF-8" "Spanish - UTF-8" \
+    "ja_JP.UTF-8" "Japanese - UTF-8" \
+    "zh_CN.UTF-8" "Chinese (Simplified) - UTF-8")
+[ -z "$LOCALE_VAL" ] && exit 0
+
+# === Root password ===
+ROOT_PASS=$(passwordbox "Root Password" "Enter root password (min 4 chars)")
+[ -z "$ROOT_PASS" ] && exit 0
+ROOT_PASS2=$(passwordbox "Root Password" "Confirm root password")
+[[ "$ROOT_PASS" != "$ROOT_PASS2" ]] && { msgbox "Error" "Passwords do not match"; exit 1; }
+
+# === Admin user ===
+ADMIN_USER=$(inputbox "Admin User" "Enter admin username" "admin")
+[ -z "$ADMIN_USER" ] && exit 0
+
+ADMIN_PASS=$(passwordbox "Admin Password" "Enter password for $ADMIN_USER")
+[ -z "$ADMIN_PASS" ] && exit 0
+ADMIN_PASS2=$(passwordbox "Admin Password" "Confirm password for $ADMIN_USER")
+[[ "$ADMIN_PASS" != "$ADMIN_PASS2" ]] && { msgbox "Error" "Passwords do not match"; exit 1; }
+
+ADMIN_KEY=$(inputbox "SSH Key (optional)" "Paste SSH public key (or leave blank to skip)" "")
+
+# === Services ===
+SERVICES=$(checklist "Services" "Select services to enable on boot" \
+    "sshd"          "SSH server"        on  \
+    "docker"        "Docker container runtime" on  \
+    "nftables"      "Firewall"          on  \
+    "fail2ban"      "Intrusion prevention" on \
+    "NetworkManager" "Network manager"  on  \
+    "smb"           "Samba file sharing" off \
+    "nginx"         "Web server + WebUI" on  \
+    "wireguard"     "WireGuard VPN"     off)
+[ -z "$SERVICES" ] && { msgbox "Error" "Select at least one service"; exit 1; }
+
+# === Final confirmation ===
+SUMMARY="Disk:       $DISK\n\
+Filesystem:  $FS_CHOICE\n\
+Encryption:  $ENCRYPT\n\
+Hostname:    $HOSTNAME_VAL\n\
+Timezone:    $TIMEZONE\n\
+Locale:      $LOCALE_VAL\n\
+Admin user:  $ADMIN_USER\n\
+Boot mode:   ${BOOT_MODE^^}"
+
+yesno "Confirm Installation" "\Zb$SUMMARY\Zn\n\n\Zr\Z1This will ERASE $DISK. Continue?\Zn" || exit 0
+
+# === Partition names ===
+if [[ "$DISK" == /dev/nvme* ]] || [[ "$DISK" == /dev/mmcblk* ]]; then
+    PART_PREFIX="p"
+else
+    PART_PREFIX=""
+fi
+
+# === Begin installation ===
+{
+echo "XXX"; echo "10"; echo "Partitioning disk..."; echo "XXX"
 
 # Partition disk
-log "Partitioning /dev/$DISK..."
 if [[ "$BOOT_MODE" == "uefi" ]]; then
-    # UEFI: EFI partition (512MB) + root (rest)
-    parted -s /dev/$DISK mklabel gpt
-    parted -s /dev/$DISK mkpart ESP fat32 1MiB 513MiB
-    parted -s /dev/$DISK set 1 esp on
-    parted -s /dev/$DISK mkpart primary btrfs 513MiB 100%
-    BOOT_PART="/dev/${DISK}1"
-    ROOT_PART="/dev/${DISK}2"
+    parted -s "$DISK" mklabel gpt
+    parted -s "$DISK" mkpart ESP fat32 1MiB 513MiB
+    parted -s "$DISK" set 1 esp on
+    if [[ "$ENCRYPT" == "yes" ]]; then
+        parted -s "$DISK" mkpart primary 513MiB 100%
+    else
+        parted -s "$DISK" mkpart primary "$FS_CHOICE" 513MiB 100%
+    fi
+    BOOT_PART="${DISK}${PART_PREFIX}1"
+    DATA_PART="${DISK}${PART_PREFIX}2"
 else
-    # BIOS: boot partition (1MB) + root (rest)
-    parted -s /dev/$DISK mklabel msdos
-    parted -s /dev/$DISK mkpart primary ext4 1MiB 2MiB
-    parted -s /dev/$DISK set 1 bios_grub on
-    parted -s /dev/$DISK mkpart primary btrfs 2MiB 100%
-    ROOT_PART="/dev/${DISK}2"
+    parted -s "$DISK" mklabel msdos
+    parted -s "$DISK" mkpart primary ext4 1MiB 2MiB
+    parted -s "$DISK" set 1 bios_grub on
+    if [[ "$ENCRYPT" == "yes" ]]; then
+        parted -s "$DISK" mkpart primary 2MiB 100%
+    else
+        parted -s "$DISK" mkpart primary "$FS_CHOICE" 2MiB 100%
+    fi
+    DATA_PART="${DISK}${PART_PREFIX}2"
 fi
 
-# Format partitions
-log "Formatting partitions..."
+echo "XXX"; echo "25"; echo "Formatting partitions..."; echo "XXX"
+
+# Handle encryption
+if [[ "$ENCRYPT" == "yes" ]]; then
+    echo "$LUKS_PASS" | cryptsetup luksFormat --type luks2 "$DATA_PART" -
+    echo "$LUKS_PASS" | cryptsetup open "$DATA_PART" cryptroot -
+    ROOT_DEV="/dev/mapper/cryptroot"
+else
+    ROOT_DEV="$DATA_PART"
+fi
+
+# Format boot partition
 if [[ "$BOOT_MODE" == "uefi" ]]; then
     mkfs.fat -F32 "$BOOT_PART"
 fi
-mkfs.btrfs -f "$ROOT_PART"
 
-# Mount partitions
-log "Mounting partitions..."
-mount "$ROOT_PART" /mnt
+# Format root
+case "$FS_CHOICE" in
+    btrfs) mkfs.btrfs -f "$ROOT_DEV" ;;
+    ext4)  mkfs.ext4 -F  "$ROOT_DEV" ;;
+    xfs)   mkfs.xfs -f   "$ROOT_DEV" ;;
+esac
+
+echo "XXX"; echo "40"; echo "Mounting filesystems..."; echo "XXX"
+
+# Mount
+mount "$ROOT_DEV" /mnt
 if [[ "$BOOT_MODE" == "uefi" ]]; then
     mkdir -p /mnt/boot
     mount "$BOOT_PART" /mnt/boot
 fi
 
-# Install base system
-log "Installing base system (this may take several minutes)..."
-pacstrap /mnt base base-devel linux-cachyos linux-firmware intel-ucode amd-ucode \
-    networkmanager openssh nftables sudo vim git bash-completion
+echo "XXX"; echo "50"; echo "Installing base system (this takes a while)..."; echo "XXX"
+
+# Install base
+pacstrap /mnt base base-devel "$FS_CHOICE"-progs dosfstools \
+    linux-cachyos linux-firmware intel-ucode amd-ucode \
+    networkmanager openssh nftables sudo vim git \
+    bash-completion dialog efibootmgr grub 2>&1 | \
+    while IFS= read -r line; do
+        if [[ "$line" =~ Installing ]]; then
+            pkg=$(echo "$line" | awk '{print $NF}')
+            pct=$((50 + RANDOM % 20))
+            echo "XXX"; echo "$pct"; echo "Installing: $pkg"; echo "XXX"
+        fi
+    done
+
+echo "XXX"; echo "72"; echo "Configuring system..."; echo "XXX"
 
 # Generate fstab
-log "Generating fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# Configure system in chroot
-log "Configuring system..."
-arch-chroot /mnt /bin/bash <<EOF
-# Set hostname
-read -p "Enter hostname: " HOSTNAME
-echo "\$HOSTNAME" > /etc/hostname
+# Chroot configuration
+arch-chroot /mnt /bin/bash <<CHROOT_EOF
+# Hostname
+echo "$HOSTNAME_VAL" > /etc/hostname
 
-# Set timezone
-ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+# Timezone
+ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
 
-# Set locale
-echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+# Locale
+echo "$LOCALE_VAL UTF-8" > /etc/locale.gen
+echo "LANG=$LOCALE_VAL" > /etc/locale.conf
 locale-gen
-echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
-# Set root password
-echo "Setting root password..."
-passwd
+# Root password
+echo "root:$(echo $ROOT_PASS | openssl passwd -6 -stdin)" | chpasswd
 
-# Create admin user
-read -p "Enter admin username: " ADMIN_USER
-useradd -m -G wheel -s /bin/bash "\$ADMIN_USER"
-echo "Setting password for \$ADMIN_USER..."
-passwd "\$ADMIN_USER"
-
-# Enable sudo for wheel group
+# Admin user
+useradd -m -G wheel -s /bin/bash "$ADMIN_USER"
+echo "$ADMIN_USER:$(echo $ADMIN_PASS | openssl passwd -6 -stdin)" | chpasswd
 echo "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/wheel
 
-# Install bootloader
+# SSH key
+if [[ -n "$ADMIN_KEY" ]]; then
+    mkdir -p /home/$ADMIN_USER/.ssh
+    echo "$ADMIN_KEY" > /home/$ADMIN_USER/.ssh/authorized_keys
+    chmod 700 /home/$ADMIN_USER/.ssh
+    chmod 600 /home/$ADMIN_USER/.ssh/authorized_keys
+    chown -R $ADMIN_USER:$ADMIN_USER /home/$ADMIN_USER/.ssh
+fi
+
+# Bootloader
 if [[ "$BOOT_MODE" == "uefi" ]]; then
     bootctl install
     cat > /boot/loader/loader.conf <<LOADER
@@ -131,23 +305,47 @@ linux   /vmlinuz-linux-cachyos
 initrd  /intel-ucode.img
 initrd  /amd-ucode.img
 initrd  /initramfs-linux-cachyos.img
-options root=$ROOT_PART rw
+options root=$ROOT_DEV rw$(if [[ "$ENCRYPT" == "yes" ]]; then echo " rd.luks.name=$DATA_PART=cryptroot rd.luks.options=discard"; fi)
 ENTRY
 else
-    pacman -S --noconfirm grub
-    grub-install --target=i386-pc /dev/$DISK
+    grub-install --target=i386-pc "$DISK"
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
 
 # Enable services
-systemctl enable NetworkManager sshd nftables
+CHROOT_EOF
 
-echo
-echo "Installation complete!"
-echo "Reboot and remove the installation media."
-EOF
+# Enable selected services in chroot
+echo "$SERVICES" | tr -d '"' | tr ',' '\n' | while read -r svc; do
+    [[ -n "$svc" ]] && arch-chroot /mnt systemctl enable "$svc" 2>/dev/null
+done
+
+# Copy overlay files from live ISO
+if [[ -d /run/archiso/copytoram ]]; then
+    cp -a /run/archiso/copytoram/sysroot/* /mnt/ 2>/dev/null || true
+fi
+
+echo "XXX"; echo "90"; echo "Finishing up..."; echo "XXX"
 
 umount -R /mnt
+# Close LUKS if needed
+if [[ "$ENCRYPT" == "yes" ]]; then
+    cryptsetup close cryptroot
+fi
 
-log "Installation finished!"
-log "You can now reboot: reboot"
+echo "XXX"; echo "100"; echo "Done!"; echo "XXX"
+sleep 1
+} | dialog --title "Installing InterstellarOS" --gauge "\nSetting up your server..." 10 70 0
+
+# === Completion ===
+$DIALOG --title "Installation Complete" --msgbox "\n\
+\Zb\Z2InterstellarOS has been installed successfully!\Zn\n\n\
+Target:  $DISK\n\
+FS:      $FS_CHOICE\n\
+User:    $ADMIN_USER\n\
+Host:    $HOSTNAME_VAL\n\n\
+\ZbRemove the installation media and reboot.\Zn" 18 60
+
+clear
+echo -e "${GREEN}Installation complete!${NC}"
+echo -e "Reboot with: ${CYAN}reboot${NC}"

@@ -68,13 +68,14 @@ From the live ISO, install InterstellarOS to your hard drive:
 interstellaros-install
 ```
 
-The script will:
-- Partition and format the target disk (btrfs + EFI/boot)
-- Install the base system
-- Configure hostname, timezone, locale
-- Set root and admin user passwords
-- Install bootloader (systemd-boot for UEFI, GRUB for BIOS)
-- Enable core services
+The TUI installer will guide you through:
+1. Selecting target disk
+2. Choosing filesystem (btrfs/ext4/xfs)
+3. Optional LUKS full disk encryption
+4. Setting hostname, timezone, locale
+5. Creating admin user with SSH key
+6. Selecting services to enable
+7. Partitioning, formatting, and installing
 
 After installation, reboot and remove the installation media.
 

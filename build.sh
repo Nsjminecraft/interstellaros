@@ -54,6 +54,8 @@ rm -rf "$WORK_DIR"
 
 ISO_FILE=$(ls -t "$OUT_DIR"/interstellaros-*.iso 2>/dev/null | head -1)
 if [[ -n "$ISO_FILE" ]]; then
+    # Fix ownership so non-root users can use the ISO
+    chown "$(stat -c '%u:%g' "$SCRIPT_DIR")" "$ISO_FILE" 2>/dev/null || true
     ISO_SIZE=$(du -h "$ISO_FILE" | cut -f1)
     info "Build complete!"
     info "ISO: $ISO_FILE ($ISO_SIZE)"
